@@ -1,0 +1,856 @@
+{
+ "fileName": "lecture_01.mp4",
+ "before": {
+  "overallStatus": "NOT_READY",
+  "results": [
+   {
+    "ruleId": "FILE-001",
+    "title": "지원 포맷",
+    "category": "File Integrity",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "extension": "mp4",
+     "container": "mov,mp4,m4a,3gp,3g2,mj2"
+    },
+    "message": "지원되는 파일 형식입니다.",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "FILE-002",
+    "title": "파일 디코드",
+    "category": "File Integrity",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "exitCode": 0,
+     "errorCount": 0,
+     "firstErrors": []
+    },
+    "message": "끝까지 정상 디코딩됩니다.",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "FILE-003",
+    "title": "파일 크기",
+    "category": "File Integrity",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "sizeMb": 0.2,
+     "limitMb": null
+    },
+    "message": "용량 제한을 설정하지 않았습니다.",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "MEDIA-001",
+    "title": "Video track",
+    "category": "File Integrity",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "codec": "h264",
+     "width": 640,
+     "height": 360,
+     "fps": 25.0
+    },
+    "message": "영상 track이 있습니다.",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "AUDIO-001",
+    "title": "Audio track",
+    "category": "Audio Availability",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "streams": 1
+    },
+    "message": "오디오 track이 있습니다.",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "AUDIO-002",
+    "title": "Audio codec",
+    "category": "Audio Availability",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "codec": "aac"
+    },
+    "message": "aac: 호환 codec입니다.",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "AUDIO-003",
+    "title": "Sample rate",
+    "category": "Audio Availability",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "sampleRate": 44100
+    },
+    "message": "44100 Hz",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "AUDIO-004",
+    "title": "Channel 수",
+    "category": "Audio Availability",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "channels": 2,
+     "layout": "stereo"
+    },
+    "message": "stereo (2ch).",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "AUDIO-009",
+    "title": "Audio/Video 길이",
+    "category": "Audio Availability",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "audioSec": 9.93,
+     "videoSec": 9.92
+    },
+    "message": "길이가 일치합니다.",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "AUDIO-005",
+    "title": "L/R 신호 균형",
+    "category": "Audio Signal Integrity",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "lRmsDb": -16.8,
+     "rRmsDb": -16.8,
+     "deltaDb": 0.0
+    },
+    "message": "L/R 음량이 균형적입니다.",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "AUDIO-006",
+    "title": "무음 비율",
+    "category": "Audio Signal Integrity",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "L": 0.052,
+     "R": 0.052
+    },
+    "message": "무음 비율이 정상 범위입니다.",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "AUDIO-007",
+    "title": "음성 활동(Speech activity)",
+    "category": "Audio Signal Integrity",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "L": 0.797,
+     "R": 0.797
+    },
+    "message": "음성 구간 비율 80%",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "AUDIO-008",
+    "title": "L/R 상관관계 / 모노 다운믹스",
+    "category": "Audio Signal Integrity",
+    "status": "FAIL",
+    "severity": "ERROR",
+    "metrics": {
+     "correlation": -1.0,
+     "downmixLossDb": 76.0,
+     "downmixSpeechRatio": 0.0
+    },
+    "message": "모노로 합치면 신호가 76.0 dB 줄고 음성 구간이 0%로 감소합니다. 채널 간 위상/상관관계 이상 가능성이 있습니다.",
+    "impact": "AI 서비스가 내부에서 모노로 변환하면 음성이 상쇄되어 STT 결과가 비어 있을 수 있습니다.",
+    "action": "정상 채널(L)을 양쪽에 복제하세요. 단순 모노 변환(-ac 1)은 같은 상쇄를 재현하므로 해결책이 아닙니다.",
+    "recommendedFix": "FIX-001",
+    "errorCode": null
+   }
+  ],
+  "metrics": {
+   "sizeBytes": 177145,
+   "probe": {
+    "container": "mov,mp4,m4a,3gp,3g2,mj2",
+    "durationSec": 9.93,
+    "bitRate": 142657,
+    "streams": [
+     {
+      "index": 0,
+      "codec_type": "video",
+      "codec_name": "h264",
+      "width": 640,
+      "height": 360,
+      "avg_frame_rate": "25/1",
+      "sample_rate": null,
+      "channels": null,
+      "channel_layout": null,
+      "duration": "9.920000"
+     },
+     {
+      "index": 1,
+      "codec_type": "audio",
+      "codec_name": "aac",
+      "width": null,
+      "height": null,
+      "avg_frame_rate": "0/0",
+      "sample_rate": "44100",
+      "channels": 2,
+      "channel_layout": "stereo",
+      "duration": "9.933991"
+     }
+    ]
+   },
+   "audio": {
+    "channels": 2,
+    "analyzedSeconds": 9.92,
+    "perChannel": [
+     {
+      "channel": "L",
+      "rmsDb": -16.8,
+      "peakDb": -3.1,
+      "silenceRatio": 0.052,
+      "speechRatio": 0.797
+     },
+     {
+      "channel": "R",
+      "rmsDb": -16.8,
+      "peakDb": -3.1,
+      "silenceRatio": 0.052,
+      "speechRatio": 0.797
+     }
+    ],
+    "stereo": {
+     "deltaDb": 0.0,
+     "correlation": -1.0,
+     "downmixRmsDb": -92.8,
+     "downmixLossDb": 76.0,
+     "downmixSilenceRatio": 1.0,
+     "downmixSpeechRatio": 0.0
+    }
+   },
+   "channelDecision": {
+    "state": "ONE_SIDED",
+    "sourceChannel": 0,
+    "reasons": [
+     "DOWNMIX_COLLAPSE"
+    ]
+   }
+  },
+  "sizeBytes": 177145
+ },
+ "fix": {
+  "fixId": "FIX-001",
+  "params": {
+   "sourceChannel": 0
+  },
+  "checks": [
+   {
+    "ruleId": "OUTPUT-001",
+    "title": "Post-fix decode",
+    "status": "PASS",
+    "message": "수정된 파일이 정상 디코딩됩니다."
+   },
+   {
+    "ruleId": "OUTPUT-002",
+    "title": "Post-fix audio",
+    "status": "PASS",
+    "message": "수정된 파일에 오디오가 있습니다."
+   },
+   {
+    "ruleId": "OUTPUT-003",
+    "title": "Channel integrity",
+    "status": "PASS",
+    "message": "L/R 채널 검사를 통과했습니다."
+   }
+  ]
+ },
+ "after": {
+  "overallStatus": "READY",
+  "results": [
+   {
+    "ruleId": "FILE-001",
+    "title": "지원 포맷",
+    "category": "File Integrity",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "extension": "mp4",
+     "container": "mov,mp4,m4a,3gp,3g2,mj2"
+    },
+    "message": "지원되는 파일 형식입니다.",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "FILE-002",
+    "title": "파일 디코드",
+    "category": "File Integrity",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "exitCode": 0,
+     "errorCount": 0,
+     "firstErrors": []
+    },
+    "message": "끝까지 정상 디코딩됩니다.",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "FILE-003",
+    "title": "파일 크기",
+    "category": "File Integrity",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "sizeMb": 0.2,
+     "limitMb": null
+    },
+    "message": "용량 제한을 설정하지 않았습니다.",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "MEDIA-001",
+    "title": "Video track",
+    "category": "File Integrity",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "codec": "h264",
+     "width": 640,
+     "height": 360,
+     "fps": 25.0
+    },
+    "message": "영상 track이 있습니다.",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "AUDIO-001",
+    "title": "Audio track",
+    "category": "Audio Availability",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "streams": 1
+    },
+    "message": "오디오 track이 있습니다.",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "AUDIO-002",
+    "title": "Audio codec",
+    "category": "Audio Availability",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "codec": "aac"
+    },
+    "message": "aac: 호환 codec입니다.",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "AUDIO-003",
+    "title": "Sample rate",
+    "category": "Audio Availability",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "sampleRate": 44100
+    },
+    "message": "44100 Hz",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "AUDIO-004",
+    "title": "Channel 수",
+    "category": "Audio Availability",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "channels": 2,
+     "layout": "stereo"
+    },
+    "message": "stereo (2ch).",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "AUDIO-009",
+    "title": "Audio/Video 길이",
+    "category": "Audio Availability",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "audioSec": 9.94,
+     "videoSec": 9.92
+    },
+    "message": "길이가 일치합니다.",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "AUDIO-005",
+    "title": "L/R 신호 균형",
+    "category": "Audio Signal Integrity",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "lRmsDb": -16.8,
+     "rRmsDb": -16.8,
+     "deltaDb": 0.0
+    },
+    "message": "L/R 음량이 균형적입니다.",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "AUDIO-006",
+    "title": "무음 비율",
+    "category": "Audio Signal Integrity",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "L": 0.052,
+     "R": 0.052
+    },
+    "message": "무음 비율이 정상 범위입니다.",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "AUDIO-007",
+    "title": "음성 활동(Speech activity)",
+    "category": "Audio Signal Integrity",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "L": 0.797,
+     "R": 0.797
+    },
+    "message": "음성 구간 비율 80%",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "AUDIO-008",
+    "title": "L/R 상관관계 / 모노 다운믹스",
+    "category": "Audio Signal Integrity",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "correlation": 1.0,
+     "downmixLossDb": 0.0,
+     "downmixSpeechRatio": 0.797
+    },
+    "message": "모노로 합쳐도 음성이 유지됩니다.",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   }
+  ],
+  "metrics": {
+   "sizeBytes": 195887,
+   "probe": {
+    "container": "mov,mp4,m4a,3gp,3g2,mj2",
+    "durationSec": 9.94,
+    "bitRate": 157687,
+    "streams": [
+     {
+      "index": 0,
+      "codec_type": "video",
+      "codec_name": "h264",
+      "width": 640,
+      "height": 360,
+      "avg_frame_rate": "25/1",
+      "sample_rate": null,
+      "channels": null,
+      "channel_layout": null,
+      "duration": "9.920000"
+     },
+     {
+      "index": 1,
+      "codec_type": "audio",
+      "codec_name": "aac",
+      "width": null,
+      "height": null,
+      "avg_frame_rate": "0/0",
+      "sample_rate": "44100",
+      "channels": 2,
+      "channel_layout": "stereo",
+      "duration": "9.938005"
+     }
+    ]
+   },
+   "audio": {
+    "channels": 2,
+    "analyzedSeconds": 9.92,
+    "perChannel": [
+     {
+      "channel": "L",
+      "rmsDb": -16.8,
+      "peakDb": -3.1,
+      "silenceRatio": 0.052,
+      "speechRatio": 0.797
+     },
+     {
+      "channel": "R",
+      "rmsDb": -16.8,
+      "peakDb": -3.1,
+      "silenceRatio": 0.052,
+      "speechRatio": 0.797
+     }
+    ],
+    "stereo": {
+     "deltaDb": 0.0,
+     "correlation": 1.0,
+     "downmixRmsDb": -16.8,
+     "downmixLossDb": 0.0,
+     "downmixSilenceRatio": 0.052,
+     "downmixSpeechRatio": 0.797
+    }
+   },
+   "channelDecision": {
+    "state": "OK",
+    "sourceChannel": 0,
+    "reasons": []
+   }
+  },
+  "sizeBytes": 195887
+ },
+ "naiveMono": {
+  "overallStatus": "NOT_READY",
+  "results": [
+   {
+    "ruleId": "FILE-001",
+    "title": "지원 포맷",
+    "category": "File Integrity",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "extension": "mp4",
+     "container": "mov,mp4,m4a,3gp,3g2,mj2"
+    },
+    "message": "지원되는 파일 형식입니다.",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "FILE-002",
+    "title": "파일 디코드",
+    "category": "File Integrity",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "exitCode": 0,
+     "errorCount": 0,
+     "firstErrors": []
+    },
+    "message": "끝까지 정상 디코딩됩니다.",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "FILE-003",
+    "title": "파일 크기",
+    "category": "File Integrity",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "sizeMb": 0.0,
+     "limitMb": null
+    },
+    "message": "용량 제한을 설정하지 않았습니다.",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "MEDIA-001",
+    "title": "Video track",
+    "category": "File Integrity",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "codec": "h264",
+     "width": 640,
+     "height": 360,
+     "fps": 25.0
+    },
+    "message": "영상 track이 있습니다.",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "AUDIO-001",
+    "title": "Audio track",
+    "category": "Audio Availability",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "streams": 1
+    },
+    "message": "오디오 track이 있습니다.",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "AUDIO-002",
+    "title": "Audio codec",
+    "category": "Audio Availability",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "codec": "aac"
+    },
+    "message": "aac: 호환 codec입니다.",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "AUDIO-003",
+    "title": "Sample rate",
+    "category": "Audio Availability",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "sampleRate": 44100
+    },
+    "message": "44100 Hz",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "AUDIO-004",
+    "title": "Channel 수",
+    "category": "Audio Availability",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "channels": 1,
+     "layout": "mono"
+    },
+    "message": "mono (1ch).",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "AUDIO-009",
+    "title": "Audio/Video 길이",
+    "category": "Audio Availability",
+    "status": "PASS",
+    "severity": "INFO",
+    "metrics": {
+     "audioSec": 9.94,
+     "videoSec": 9.92
+    },
+    "message": "길이가 일치합니다.",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "AUDIO-005",
+    "title": "L/R 신호 균형",
+    "category": "Audio Signal Integrity",
+    "status": "NOT_APPLICABLE",
+    "severity": "INFO",
+    "metrics": {},
+    "message": "mono 파일입니다.",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   },
+   {
+    "ruleId": "AUDIO-006",
+    "title": "무음 비율",
+    "category": "Audio Signal Integrity",
+    "status": "FAIL",
+    "severity": "ERROR",
+    "metrics": {
+     "C0": 1.0
+    },
+    "message": "모든 채널이 사실상 무음입니다.",
+    "impact": "처리 상태는 SUCCESS로 표시되어도 STT 결과가 0건일 가능성이 높습니다.",
+    "action": "원본 녹음/편집 단계에서 오디오가 포함되었는지 확인하세요.",
+    "recommendedFix": null,
+    "errorCode": "NO_SPEECH"
+   },
+   {
+    "ruleId": "AUDIO-007",
+    "title": "음성 활동(Speech activity)",
+    "category": "Audio Signal Integrity",
+    "status": "WARN",
+    "severity": "WARNING",
+    "metrics": {
+     "C0": 0.0
+    },
+    "message": "음성으로 보이는 구간이 0%에 불과합니다.",
+    "impact": "음악/효과음 위주이거나 음성이 매우 작아 STT 결과가 거의 없을 수 있습니다.",
+    "action": "음성이 실제로 들리는지 확인하세요.",
+    "recommendedFix": null,
+    "errorCode": "NO_SPEECH"
+   },
+   {
+    "ruleId": "AUDIO-008",
+    "title": "L/R 상관관계 / 모노 다운믹스",
+    "category": "Audio Signal Integrity",
+    "status": "NOT_APPLICABLE",
+    "severity": "INFO",
+    "metrics": {},
+    "message": "mono 파일입니다.",
+    "impact": "",
+    "action": "",
+    "recommendedFix": null,
+    "errorCode": null
+   }
+  ],
+  "metrics": {
+   "sizeBytes": 23104,
+   "probe": {
+    "container": "mov,mp4,m4a,3gp,3g2,mj2",
+    "durationSec": 9.94,
+    "bitRate": 18598,
+    "streams": [
+     {
+      "index": 0,
+      "codec_type": "video",
+      "codec_name": "h264",
+      "width": 640,
+      "height": 360,
+      "avg_frame_rate": "25/1",
+      "sample_rate": null,
+      "channels": null,
+      "channel_layout": null,
+      "duration": "9.920000"
+     },
+     {
+      "index": 1,
+      "codec_type": "audio",
+      "codec_name": "aac",
+      "width": null,
+      "height": null,
+      "avg_frame_rate": "0/0",
+      "sample_rate": "44100",
+      "channels": 1,
+      "channel_layout": "mono",
+      "duration": "9.938005"
+     }
+    ]
+   },
+   "audio": {
+    "channels": 1,
+    "analyzedSeconds": 9.92,
+    "perChannel": [
+     {
+      "channel": "C0",
+      "rmsDb": -89.8,
+      "peakDb": -53.3,
+      "silenceRatio": 1.0,
+      "speechRatio": 0.0
+     }
+    ],
+    "stereo": null
+   },
+   "channelDecision": {
+    "state": "NOT_APPLICABLE",
+    "sourceChannel": null,
+    "reasons": []
+   }
+  },
+  "sizeBytes": 23104
+ }
+}
