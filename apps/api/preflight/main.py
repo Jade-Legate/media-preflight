@@ -1,5 +1,7 @@
+import os
 import re
 import statistics
+import threading
 import uuid
 from contextlib import asynccontextmanager
 from typing import Literal
@@ -7,7 +9,7 @@ from typing import Literal
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 
@@ -17,9 +19,26 @@ from .db import Diagnostic, File, FixJob, Job, Session, create_event, init_db, n
 @asynccontextmanager
 async def lifespan(_):
     init_db()
-    if config.S3_CREATE_BUCKET:
+    if config.S3_CREATE_BUCKET or config.STORAGE_BACKEND == "local":
         storage.ensure_bucket()
+    if config.QUEUE_BACKEND == "thread":
+        _fail_interrupted_jobs()
+        from .worker import _cleanup_loop
+
+        threading.Thread(target=_cleanup_loop, daemon=True).start()
     yield
+
+
+def _fail_interrupted_jobs():
+    """단일 서버 재시작 시 메모리의 작업은 사라진다 → 진행 중이던 작업을 FAILED로 정리해 UI가 무한 대기하지 않게 한다."""
+    with Session() as s:
+        for d in s.query(Diagnostic).filter(Diagnostic.status.in_(["QUEUED", "RUNNING"])):
+            d.status, d.error_code = "FAILED", "WORKER_TIMEOUT"
+        for x in s.query(FixJob).filter(FixJob.status.in_(["QUEUED", "RUNNING"])):
+            x.status, x.error_code = "FAILED", "WORKER_TIMEOUT"
+        for f in s.query(File).filter(File.status.in_(["QUEUED", "ANALYZING", "FIXING", "VERIFYING"])):
+            f.status = "FAILED"
+        s.commit()
 
 
 app = FastAPI(title="Media Preflight API", version=rules.RULESET["version"], lifespan=lifespan)
@@ -300,11 +319,41 @@ def download(file_id: str):
         return {"url": storage.create_download_url(f.object_key, f.original_name), "expiresIn": config.SIGNED_URL_TTL_SECONDS}
 
 
+@app.put("/api/v1/blobs/{key:path}")
+async def put_blob(key: str, exp: int, sig: str, request: Request):
+    """STORAGE_BACKEND=local 전용: signed URL 업로드."""
+    if config.STORAGE_BACKEND != "local" or not storage.verify(key, "PUT", exp, sig):
+        raise APIError(403, "INVALID_SIGNATURE", "업로드 링크가 만료되었거나 올바르지 않습니다.")
+    path = storage.local_path(key)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    size = 0
+    with open(path + ".part", "wb") as fh:
+        async for chunk in request.stream():
+            size += len(chunk)
+            if size > config.MAX_UPLOAD_BYTES:
+                fh.close()
+                os.remove(path + ".part")
+                raise APIError(413, "UPLOAD_TOO_LARGE", "업로드 한도를 초과했습니다.")
+            fh.write(chunk)
+    os.replace(path + ".part", path)
+    return {"ok": True, "sizeBytes": size}
+
+
+@app.get("/api/v1/blobs/{key:path}")
+def get_blob(key: str, exp: int, sig: str, name: str = "file"):
+    if config.STORAGE_BACKEND != "local" or not storage.verify(key, "GET", exp, sig):
+        raise APIError(403, "INVALID_SIGNATURE", "다운로드 링크가 만료되었거나 올바르지 않습니다.")
+    path = storage.local_path(key)
+    if not os.path.exists(path):
+        raise APIError(404, "NOT_FOUND", "파일이 없거나 보존기간이 지났습니다.")
+    return FileResponse(path, filename=sanitize_filename(name))
+
+
 @app.get("/api/v1/health")
 def health():
     checks = {}
     for name, fn in (("db", lambda: Session().execute(text("select 1"))), ("queue", jobqueue.ping),
-                     ("storage", lambda: storage.s3.head_bucket(Bucket=config.S3_BUCKET))):
+                     ("storage", storage.check)):
         try:
             fn()
             checks[name] = "ok"

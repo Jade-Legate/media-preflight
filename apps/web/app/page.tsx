@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
-import { ApiError, MAX_UPLOAD_BYTES, SUPPORTED, mb, post } from "@/lib/api";
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { API_URL, ApiError, MAX_UPLOAD_BYTES, SUPPORTED, mb, post } from "@/lib/api";
 
 type Picked = { file: File; problem: string | null; progress: number };
 
@@ -41,6 +42,11 @@ export default function Home() {
     setFiles((prev) => [...prev, ...Array.from(list).map((file) => ({ file, problem: check(file), progress: 0 }))]);
   };
   const valid = files.filter((f) => !f.problem);
+
+  // 무료 서버는 절전될 수 있어 페이지를 여는 순간 미리 깨운다.
+  useEffect(() => {
+    if (API_URL) fetch(API_URL + "/api/v1/health").catch(() => {});
+  }, []);
 
   async function run() {
     setBusy(true);
@@ -85,6 +91,15 @@ export default function Home() {
           <b>Diagnose → Explain → Fix → Verify</b>
         </p>
       </div>
+
+      {!API_URL && (
+        <div className="card" role="status">
+          <b>실제 파일 업로드 서버를 준비 중입니다.</b>{" "}
+          <span className="muted">진단 → 자동 수정 → 재검증의 전체 흐름은 </span>
+          <Link href="/showcase#demo">인터랙티브 데모</Link>
+          <span className="muted">에서 바로 확인할 수 있어요.</span>
+        </div>
+      )}
 
       <div
         className={`drop ${over ? "over" : ""}`}
@@ -167,7 +182,7 @@ export default function Home() {
 
       <div className="row spread">
         <span className="muted small">업로드 파일은 24시간 후 자동 삭제됩니다.</span>
-        <button className="btn primary" disabled={!valid.length || busy} onClick={run}>
+        <button className="btn primary" disabled={!API_URL || !valid.length || busy} onClick={run}>
           {busy ? "업로드 중…" : `진단 시작 (${valid.length}개)`}
         </button>
       </div>
