@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import HeaderAction from "@/components/HeaderAction";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -16,9 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Link href="/" className="brand">
               Media Preflight <span>· AI Readiness Check</span>
             </Link>
-            <Link href="/showcase" className="btn primary">
-              프로젝트 보기 ↗
-            </Link>
+            <HeaderAction />
           </div>
         </header>
         <main className="wrap">{children}</main>

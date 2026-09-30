@@ -77,6 +77,11 @@ input[type="number"], select { font: inherit; color: var(--text); background: va
 input[type="number"] { width: 100px; }
 label { display: inline-flex; gap: 6px; align-items: center; }
 
+.howto { list-style: none; counter-reset: step; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.howto li { counter-increment: step; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+.howto li::before { content: counter(step); display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: var(--accent-text); font-weight: 700; font-size: .8rem; margin-bottom: 6px; }
+.howto b { display: block; }
+.howto span { color: var(--muted); font-size: .88rem; }
 .drop { border: 2px dashed var(--border); border-radius: var(--radius); padding: 40px 16px; text-align: center; cursor: pointer; transition: border-color .15s, background .15s; }
 .drop.over, .drop:hover { border-color: var(--accent); background: var(--surface-2); }
 
@@ -123,6 +128,8 @@ section.block { padding: 40px 0; border-top: 1px solid var(--border); scroll-mar
 .flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-weight: 600; }
 .flow span { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; }
 .flow i { color: var(--muted); font-style: normal; }
+.grid4 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.quote { border-left: 4px solid var(--accent); background: var(--surface); padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 12px 0; }
 .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .pre { font-family: var(--mono); font-size: .82rem; line-height: 1.5; white-space: pre; overflow-x: auto; background: var(--surface-2); border-radius: 8px; padding: 14px; margin: 0; }
 .toc { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -130,7 +137,7 @@ section.block { padding: 40px 0; border-top: 1px solid var(--border); scroll-mar
 .steps button[aria-current="step"] { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
 
 @media (max-width: 640px) {
-  .compare, .channels { grid-template-columns: 1fr; }
+  .compare, .channels, .howto, .grid4 { grid-template-columns: 1fr; }
   main { padding-top: 20px; }
   .card { padding: 16px; }
   .brand span { display: none; }
