@@ -9,16 +9,10 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-from redis import Redis
-from rq import Queue
 from sqlalchemy import text
 
-from . import config, fixes, rules, storage, tasks
+from . import config, fixes, jobqueue, rules, storage, tasks
 from .db import Diagnostic, File, FixJob, Job, Session, create_event, init_db, new_id
-
-redis = Redis.from_url(config.REDIS_URL)
-queue = Queue("media", connection=redis, is_async=not config.RQ_SYNC)
-
 
 @asynccontextmanager
 async def lifespan(_):
@@ -120,7 +114,7 @@ def _enqueue_diagnostic(s, f: File) -> Diagnostic:
     s.add(d)
     f.status = "QUEUED"
     s.commit()
-    queue.enqueue(tasks.run_diagnostic, d.id, job_timeout=config.JOB_TIMEOUT_SECONDS)
+    jobqueue.enqueue("diagnose", d.id)
     return d
 
 
@@ -145,7 +139,7 @@ def _enqueue_fix(s, f: File, fix_id: str, params: dict) -> FixJob:
     s.add(fx)
     create_event(s, "fix_started", f.job_id, f.id, fixId=fix_id)
     s.commit()
-    queue.enqueue(tasks.run_fix, fx.id, job_timeout=config.JOB_TIMEOUT_SECONDS)
+    jobqueue.enqueue("fix", fx.id)
     return fx
 
 
@@ -309,18 +303,14 @@ def download(file_id: str):
 @app.get("/api/v1/health")
 def health():
     checks = {}
-    for name, fn in (("db", lambda: Session().execute(text("select 1"))), ("redis", redis.ping),
+    for name, fn in (("db", lambda: Session().execute(text("select 1"))), ("queue", jobqueue.ping),
                      ("storage", lambda: storage.s3.head_bucket(Bucket=config.S3_BUCKET))):
         try:
             fn()
             checks[name] = "ok"
         except Exception:  # noqa: BLE001
             checks[name] = "error"
-    try:
-        checks["workers"] = len(__import__("rq").Worker.all(connection=redis))
-    except Exception:  # noqa: BLE001
-        checks["workers"] = 0
-    ok = all(v == "ok" for k, v in checks.items() if k != "workers")
+    ok = all(v == "ok" for v in checks.values())
     return JSONResponse({"ok": ok, **checks}, status_code=200 if ok else 503)
 
 

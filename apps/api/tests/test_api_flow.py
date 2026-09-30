@@ -95,3 +95,20 @@ def test_KPI와_health를_조회할_수_있다(client):
     assert kpi["diagnosedFiles"] >= 1
     assert kpi["verificationPassRate"] is not None
     assert client.get("/api/v1/health").json()["db"] == "ok"
+
+
+def test_worker_HTTP_엔드포인트로도_작업을_실행할_수_있다(client, samples):
+    # Given 진단 대기 중인 파일 (Cloud Run에서는 Cloud Tasks가 이 엔드포인트를 호출한다)
+    from preflight.db import Diagnostic, Session, new_id
+    from preflight.worker import app as worker_app
+
+    job_id, [fid] = upload(client, [samples["mono.mp4"]])
+    with Session() as s:
+        d = Diagnostic(id=new_id("d"), file_id=fid)
+        s.add(d)
+        s.commit()
+    # When worker HTTP로 진단을 실행하면
+    with TestClient(worker_app) as w:
+        assert w.post("/tasks/diagnose", json={"id": d.id}).json() == {"ok": True}
+    # Then 결과가 저장된다
+    assert client.get(f"/api/v1/diagnostics/{d.id}").json()["overallStatus"] == "READY"
