@@ -43,6 +43,9 @@ body {
   color: var(--text);
   font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", sans-serif;
   -webkit-font-smoothing: antialiased;
+  /* 한글은 기본값이 글자 단위 줄바꿈이라 '습/니다'처럼 끊긴다 → 단어 단위로 */
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 a { color: var(--accent); }
 h1, h2, h3 { line-height: 1.3; margin: 0 0 .5em; }
