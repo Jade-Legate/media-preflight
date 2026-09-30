@@ -23,6 +23,13 @@ FILE_RETENTION_HOURS = int(env("FILE_RETENTION_HOURS", "24"))
 SIGNED_URL_TTL_SECONDS = int(env("SIGNED_URL_TTL_SECONDS", "600"))
 WEB_ORIGINS = [o.strip() for o in env("WEB_ORIGINS", "http://localhost:3000").split(",") if o.strip()]
 JOB_TIMEOUT_SECONDS = int(env("JOB_TIMEOUT_SECONDS", "1800"))
+# rq: 로컬/상시 worker, cloudtasks: Cloud Run(worker를 HTTP로 호출, scale-to-zero)
+QUEUE_BACKEND = env("QUEUE_BACKEND", "rq")
+GCP_PROJECT = env("GCP_PROJECT", "")
+GCP_LOCATION = env("GCP_LOCATION", "asia-northeast3")
+TASKS_QUEUE = env("TASKS_QUEUE", "media")
+WORKER_URL = env("WORKER_URL", "")  # Cloud Run worker service URL
+TASKS_SERVICE_ACCOUNT = env("TASKS_SERVICE_ACCOUNT", "")  # worker 호출용 OIDC 토큰 발급 계정
 # 테스트에서 RQ 작업을 요청 스레드에서 동기 실행한다.
 RQ_SYNC = env("RQ_SYNC", "false") == "true"
 
