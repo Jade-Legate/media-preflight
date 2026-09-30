@@ -71,12 +71,29 @@ export type FixJob = {
   verification: Diagnostic | null;
 };
 
-export type JobFile = FileInfo & { diagnostic: Diagnostic | null; fixes: FixJob[] };
+export type JobFile = FileInfo & {
+  // 수정본이 검증을 통과했다면 그 상태, 아니면 원본 진단 상태
+  effectiveStatus: string;
+  diagnostic: Diagnostic | null;
+  fixes: FixJob[];
+  // 일괄 다운로드 시 담기는 파일: 검증된 수정본이 있으면 수정본, 없으면 원본
+  deliverable: { fileId: string; name: string; fixed: boolean } | null;
+};
+
+export type JobSummary = {
+  jobId: string;
+  createdAt: string;
+  mode: "speech" | "video";
+  fileCount: number;
+  fixedCount: number;
+  statusCounts: Record<string, number>;
+};
 
 export type Job = {
   jobId: string;
   mode: "speech" | "video";
   maxFileSizeMb: number | null;
+  createdAt: string;
   status: "PROCESSING" | "COMPLETED";
   summary: Record<string, number>;
   files: JobFile[];

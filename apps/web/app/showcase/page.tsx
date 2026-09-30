@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import Demo from "@/components/Demo";
 
 export const metadata: Metadata = {
   title: "Media Preflight · 프로젝트 상세",
@@ -27,7 +26,6 @@ export default function Showcase() {
         </p>
         <div className="row" style={{ marginTop: 16 }}>
           <Link className="btn primary" href="/">직접 써보기</Link>
-          <a className="btn" href="#demo">샘플로 체험하기</a>
           <a className="btn" href={GITHUB_URL} target="_blank" rel="noreferrer">GitHub ↗</a>
         </div>
       </section>
@@ -57,14 +55,8 @@ export default function Showcase() {
         </p>
       </section>
 
-      <section className="block" id="demo">
-        <h2>3. 샘플로 체험하기</h2>
-        <p className="muted">실제 장애와 같은 증상의 합성 파일을 분석기로 측정한 결과입니다.</p>
-        <Demo />
-      </section>
-
       <section className="block" id="decisions">
-        <h2>4. 핵심 기획 판단</h2>
+        <h2>3. 핵심 기획 판단</h2>
         <div className="grid4">
           {DECISIONS.map(([title, body], i) => (
             <div className="card" key={title}>
@@ -76,7 +68,7 @@ export default function Showcase() {
       </section>
 
       <section className="block" id="result">
-        <h2>5. 검증과 다음 단계</h2>
+        <h2>4. 검증과 다음 단계</h2>
         <div className="table-scroll">
           <table>
             <thead>

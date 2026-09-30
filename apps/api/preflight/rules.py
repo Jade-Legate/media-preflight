@@ -139,7 +139,7 @@ def evaluate(ctx: dict) -> list[dict]:
         out.append(_result("FILE-002", "파일 디코드", "WARN", dec, f"디코딩은 완료됐지만 오류 메시지 {dec['errorCount']}건이 발생했습니다.",
                            "일부 구간의 영상/음성이 손상되었을 수 있습니다.", "문제 구간을 재생해 확인하세요."))
     else:
-        out.append(_result("FILE-002", "파일 디코드", "PASS", dec, "끝까지 정상 디코딩됩니다."))
+        out.append(_result("FILE-002", "파일 디코드", "PASS", dec, "끝까지 정상적으로 열립니다(영상 keyframe · 오디오 전체 기준)."))
 
     size_mb = round(ctx["sizeBytes"] / 1024**2, 1)
     limit = ctx["settings"].get("maxFileSizeMb")

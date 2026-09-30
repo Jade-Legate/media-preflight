@@ -112,3 +112,30 @@ def test_worker_HTTP_엔드포인트로도_작업을_실행할_수_있다(client
         assert w.post("/tasks/diagnose", json={"id": d.id}).json() == {"ok": True}
     # Then 결과가 저장된다
     assert client.get(f"/api/v1/diagnostics/{d.id}").json()["overallStatus"] == "READY"
+
+
+def test_여러_영상의_채널_이상을_한_번에_수정하고_ZIP으로_받는다(client, samples):
+    import io
+    import zipfile
+
+    # Given 채널 이상 2개(역상, 한쪽 무음) + 판단이 애매한 1개를 한 번에 올리고
+    job_id, fids = upload(client, [samples["phase_inverted.mp4"], samples["dead_right.mp4"], samples["weak_right.mp4"]])
+    # When 일괄 채널 교정을 요청하면
+    res = client.post("/api/v1/batch/fix", json={"jobId": job_id, "fileIds": fids, "fixId": "FIX-001"}).json()
+    # Then 근거가 명확한 2개만 수정하고, 애매한 파일은 건너뛴다
+    assert len(res["queued"]) == 2
+    assert [x["fileId"] for x in res["skipped"]] == [fids[2]]
+    outputs = [f["fixes"][0]["output"]["status"] for f in read_job(client, job_id)["files"][:2]]
+    assert outputs == ["READY", "READY"]
+    # And 수정된 파일의 최종 상태는 READY로 집계된다
+    job = read_job(client, job_id)
+    assert [f["effectiveStatus"] for f in job["files"]] == ["READY", "READY", "REVIEW_REQUIRED"]
+    assert job["summary"]["READY"] == 2
+    # And 선택한 3개를 ZIP 하나로 받으면 수정된 파일은 수정본, 나머지는 원본이 담긴다
+    z = client.get(f"/api/v1/jobs/{job_id}/download.zip", params={"files": ",".join(fids)})
+    assert z.status_code == 200
+    assert sorted(zipfile.ZipFile(io.BytesIO(z.content)).namelist()) == [
+        "dead_right_fix-001.mp4", "phase_inverted_fix-001.mp4", "weak_right.mp4"]
+    # And 내 처리 기록에서 요청 단위로 요약이 보인다
+    [summary] = client.get("/api/v1/jobs", params={"ids": job_id}).json()
+    assert summary["fileCount"] == 3 and summary["fixedCount"] == 2
