@@ -1,0 +1,12 @@
+node_modules/
+.next/
+__pycache__/
+.pytest_cache/
+.venv/
+.env
+.env.local
+samples/
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
+.claude/

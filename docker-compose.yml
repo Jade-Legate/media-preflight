@@ -1,0 +1,46 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment: { POSTGRES_USER: preflight, POSTGRES_PASSWORD: preflight, POSTGRES_DB: preflight }
+    healthcheck: { test: ["CMD", "pg_isready", "-U", "preflight"], interval: 3s, retries: 20 }
+    volumes: [pgdata:/var/lib/postgresql/data]
+
+  redis:
+    image: redis:7-alpine
+
+  s3:  # 로컬용 S3 호환 object storage (운영: Cloudflare R2)
+    image: chrislusf/seaweedfs:latest
+    command: server -s3 -s3.port=9000 -dir=/data
+    ports: ["9000:9000"]
+    volumes: [s3data:/data]
+
+  api:
+    build: { context: apps/api, args: { DEV: "true" } }
+    environment: &api-env
+      DATABASE_URL: postgresql+psycopg://preflight:preflight@postgres:5432/preflight
+      REDIS_URL: redis://redis:6379/0
+      OBJECT_STORAGE_ENDPOINT: http://s3:9000
+      OBJECT_STORAGE_PUBLIC_ENDPOINT: http://localhost:9000
+      OBJECT_STORAGE_BUCKET: media-preflight
+      OBJECT_STORAGE_ACCESS_KEY: preflight
+      OBJECT_STORAGE_SECRET_KEY: preflight-secret
+      OBJECT_STORAGE_REGION: us-east-1
+      OBJECT_STORAGE_CREATE_BUCKET: "true"
+      WEB_ORIGINS: http://localhost:3000
+    ports: ["8000:8000"]
+    depends_on: { postgres: { condition: service_healthy }, redis: { condition: service_started }, s3: { condition: service_started } }
+
+  worker:
+    build: { context: apps/api, args: { DEV: "true" } }
+    command: python -m preflight.worker
+    environment: *api-env
+    depends_on: [api]
+
+  web:
+    build: { context: apps/web, args: { NEXT_PUBLIC_API_URL: http://localhost:8000 } }
+    ports: ["3000:3000"]
+    depends_on: [api]
+
+volumes:
+  pgdata:
+  s3data:
