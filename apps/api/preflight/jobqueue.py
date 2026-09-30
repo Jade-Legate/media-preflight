@@ -28,6 +28,18 @@ if config.QUEUE_BACKEND == "cloudtasks":
     def ping() -> str:
         return "ok"
 
+elif config.QUEUE_BACKEND == "thread":
+    # 단일 서버: API 프로세스 안에서 실행. 재시작 시 진행 중 작업은 main.lifespan에서 FAILED로 정리한다.
+    from concurrent.futures import ThreadPoolExecutor
+
+    _pool = ThreadPoolExecutor(max_workers=2)
+
+    def enqueue(name: str, arg: str) -> None:
+        _pool.submit(TASKS[name], arg)
+
+    def ping() -> str:
+        return "ok"
+
 else:
     from redis import Redis
     from rq import Queue

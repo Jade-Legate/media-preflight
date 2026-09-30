@@ -68,3 +68,71 @@ def upload(path: str, key: str):
 def delete(key: str):
     s3.delete_object(Bucket=config.S3_BUCKET, Key=key)
 
+
+
+# ---------------------------------------------------------------- local disk backend
+# 단일 서버 배포용. object storage 대신 API가 HMAC 서명된 URL로 파일을 직접 받고 내준다.
+
+import hashlib
+import hmac
+import os
+import shutil
+import time
+
+
+def sign(key: str, method: str, exp: int) -> str:
+    msg = f"{method}\n{key}\n{exp}".encode()
+    return hmac.new(config.BLOB_SIGNING_KEY.encode(), msg, hashlib.sha256).hexdigest()
+
+
+def verify(key: str, method: str, exp: int, sig: str) -> bool:
+    return exp >= time.time() and hmac.compare_digest(sign(key, method, exp), sig)
+
+
+def local_path(key: str) -> str:
+    # key는 서버가 만든 uploads/{job}/{file}.{ext} 형태만 허용(경로 탈출 방지)
+    if ".." in key or key.startswith("/"):
+        raise ValueError("invalid key")
+    return os.path.join(config.LOCAL_STORAGE_DIR, key)
+
+
+def _signed_url(key: str, method: str, extra: str = "") -> str:
+    exp = int(time.time()) + config.SIGNED_URL_TTL_SECONDS
+    return f"{config.PUBLIC_API_URL}/api/v1/blobs/{key}?exp={exp}&sig={sign(key, method, exp)}{extra}"
+
+
+if config.STORAGE_BACKEND == "local":
+
+    def ensure_bucket():
+        os.makedirs(config.LOCAL_STORAGE_DIR, exist_ok=True)
+
+    def create_upload_url(key: str) -> str:
+        return _signed_url(key, "PUT")
+
+    def create_download_url(key: str, filename: str) -> str:
+        return _signed_url(key, "GET", f"&name={quote(filename, safe='')}")
+
+    def read_size(key: str) -> int | None:
+        p = local_path(key)
+        return os.path.getsize(p) if os.path.exists(p) else None
+
+    def download(key: str, path: str):
+        shutil.copyfile(local_path(key), path)
+
+    def upload(path: str, key: str):
+        os.makedirs(os.path.dirname(local_path(key)), exist_ok=True)
+        shutil.copyfile(path, local_path(key))
+
+    def delete(key: str):
+        try:
+            os.remove(local_path(key))
+        except FileNotFoundError:
+            pass
+
+    def check():
+        ensure_bucket()
+
+else:
+
+    def check():
+        s3.head_bucket(Bucket=config.S3_BUCKET)
