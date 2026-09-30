@@ -38,9 +38,21 @@ Browser ── Next.js (apps/web)
 FastAPI (apps/api) ── PostgreSQL   S3-compatible storage ◀──┘
    │ enqueue
    ▼
-Redis Queue ──▶ Media Worker (같은 이미지, python -m preflight.worker)
-                 ffprobe · ffmpeg · numpy 채널 신호 분석
+Queue ──▶ Media Worker (같은 이미지)
+            ffprobe · ffmpeg · numpy 채널 신호 분석
 ```
+
+| | 로컬 (docker compose) | 운영 (GCP) |
+|---|---|---|
+| Web | Next.js 컨테이너 | Vercel |
+| API | FastAPI 컨테이너 | Cloud Run `preflight-api` (공개) |
+| Queue | Redis + RQ (`QUEUE_BACKEND=rq`) | Cloud Tasks (`QUEUE_BACKEND=cloudtasks`) |
+| Worker | `python -m preflight.worker` | Cloud Run `preflight-worker` (비공개, OIDC 호출, scale-to-zero) |
+| DB | PostgreSQL 컨테이너 | Neon PostgreSQL |
+| Storage | SeaweedFS (S3 호환) | Cloud Storage (S3 호환 HMAC, 1일 lifecycle) |
+| Cleanup | worker 내부 1시간 주기 | Cloud Scheduler → `/tasks/cleanup` |
+
+Cloud Run은 요청이 없으면 꺼지므로 상시 실행형 RQ worker 대신 Cloud Tasks가 worker를 HTTP로 호출하게 했습니다(사용량 과금).
 
 - 웹 요청에서 FFmpeg를 실행하지 않고, 모든 변환은 worker job으로 처리합니다.
 - 파일은 API 서버를 거치지 않고 object storage로 직접 올리고 받습니다(짧은 TTL signed URL). 원본과 결과는 다른 key를 쓰고, 24시간 뒤 삭제됩니다.
@@ -95,9 +107,13 @@ docker compose run --rm -v "$PWD/apps/api:/app" -e OBJECT_STORAGE_PUBLIC_ENDPOIN
 
 ## 배포
 
-- Web: Vercel (`apps/web`, `NEXT_PUBLIC_API_URL`)
-- API + Worker + PostgreSQL + Key Value: Render Blueprint (`render.yaml`)
-- Object storage: Cloudflare R2 (bucket CORS에 웹 origin의 `PUT`, `GET` 허용 + 24h lifecycle rule)
+1. **Neon**에서 Postgres 생성 → connection string 복사
+2. **GCP** 프로젝트 생성 + 결제 계정 연결 → `gcloud auth login`
+3. API·Worker·Queue·Storage·Scheduler 한 번에 배포 (재실행 가능):
+   ```bash
+   PROJECT_ID=<gcp-project> DATABASE_URL='<neon-url>' WEB_ORIGINS=https://<web>.vercel.app ./infra/gcp/deploy.sh
+   ```
+4. **Vercel**에서 이 레포 import → Root Directory `apps/web` → `NEXT_PUBLIC_API_URL`에 출력된 API 주소 입력
 
 환경 변수는 `.env.example`을 참고하세요.
 

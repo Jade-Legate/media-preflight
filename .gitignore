@@ -10,3 +10,4 @@ samples/
 next-env.d.ts
 .DS_Store
 .claude/
+.env.deploy

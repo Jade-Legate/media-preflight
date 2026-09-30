@@ -151,19 +151,20 @@ CLOVA Speech 업로드
         <pre className="pre">{`[Browser] ── Next.js (Vercel)
     │  REST/JSON                    ┌─ signed URL PUT/GET ─┐
     ▼                               ▼                      │
- FastAPI ── PostgreSQL (jobs, diagnostics, fix_jobs, events)
+ FastAPI (Cloud Run) ── PostgreSQL (jobs, diagnostics, fix_jobs, events)
     │  enqueue
     ▼
- Redis Queue ──▶ Media Worker ── ffprobe / ffmpeg / numpy signal analysis
+ Cloud Tasks ──▶ Media Worker (Cloud Run, 비공개) ── ffprobe / ffmpeg / numpy signal analysis
                       │
                       ▼
-             S3-compatible Object Storage (R2)  ← 원본·결과 분리, 24h 후 삭제
+             S3-compatible Object Storage (GCS)  ← 원본·결과 분리, 24h 후 삭제
 
  - - - - - - - - - - - - Concept (V3+, 미구현) - - - - - - - - - - - -
  Verified file ─▶ CLOVA Speech API ─▶ STT ─┬─▶ Zero-output 검증
                                            └─▶ Scene Analysis ─▶ Metadata ─▶ Human Review ─▶ Search / Reuse`}</pre>
         <ul className="small" style={{ marginTop: 12 }}>
           <li>웹 요청에서는 FFmpeg를 실행하지 않습니다. 모든 변환은 worker job으로 처리합니다.</li>
+          <li>Cloud Run은 요청이 없으면 꺼지므로 상시 실행 worker 대신 Cloud Tasks가 worker를 호출합니다(로컬은 Redis Queue).</li>
           <li>파일은 서버를 거치지 않고 짧은 TTL의 signed URL로 object storage에 직접 업로드/다운로드합니다.</li>
           <li>진단 rule과 임계값은 registry(<code>rules.py</code>) 한 곳에서 관리하고, 모든 결과에 raw metric을 남깁니다.</li>
           <li>FFmpeg 인자는 whitelist 값만 허용하고 argument array로 실행합니다(shell 문자열 결합 없음).</li>
