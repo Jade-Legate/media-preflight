@@ -1,4 +1,5 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+// 비어 있으면 업로드 서버가 아직 연결되지 않은 상태(Showcase/데모만 동작)
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 export type RuleStatus = "PASS" | "WARN" | "FAIL" | "NOT_APPLICABLE";
 export type Overall = "READY" | "REVIEW_REQUIRED" | "NOT_READY";
@@ -96,7 +97,7 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
       headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
     });
   } catch {
-    throw new ApiError("NETWORK_ERROR", "서버에 연결할 수 없습니다. 네트워크 상태를 확인하고 다시 시도하세요.");
+    throw new ApiError("NETWORK_ERROR", "서버에 연결할 수 없습니다. 서버가 절전 상태였다면 깨어나는 데 1분 정도 걸리니 잠시 후 다시 시도하세요.");
   }
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {

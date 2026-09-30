@@ -137,3 +137,18 @@ def test_fix_파라미터는_whitelist_값만_허용한다():
         fixes.validate_params("FIX-002", {"bitrateKbps": "128k; rm -rf /"}, 2)
     with pytest.raises(ValueError):
         fixes.validate_params("FIX-001", {"sourceChannel": 3}, 2)
+
+
+def test_단일서버_저장소의_서명_URL은_위조와_만료를_거부한다():
+    import time
+
+    from preflight import storage
+
+    exp = int(time.time()) + 60
+    sig = storage.sign("uploads/j/f.mp4", "PUT", exp)
+    assert storage.verify("uploads/j/f.mp4", "PUT", exp, sig)
+    assert not storage.verify("uploads/j/other.mp4", "PUT", exp, sig)  # 다른 파일
+    assert not storage.verify("uploads/j/f.mp4", "GET", exp, sig)  # 다른 동작
+    assert not storage.verify("uploads/j/f.mp4", "PUT", int(time.time()) - 1, storage.sign("uploads/j/f.mp4", "PUT", int(time.time()) - 1))
+    with pytest.raises(ValueError):
+        storage.local_path("../etc/passwd")
