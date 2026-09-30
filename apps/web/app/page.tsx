@@ -86,19 +86,19 @@ export default function Home() {
     <div className="stack">
       <div>
         <h1>AI 분석 전에, 파일을 먼저 진단하세요.</h1>
-        <p className="muted">
-          STT·영상 AI에 넣기 전에 입력 파일이 실제로 처리 가능한 상태인지 확인합니다.{" "}
-          <b>Diagnose → Explain → Fix → Verify</b>
-        </p>
+        <p className="muted">STT·영상 AI에 넣기 전에 파일이 실제로 처리 가능한 상태인지 확인하고, 문제가 있으면 고쳐 드립니다.</p>
       </div>
 
+      <ol className="howto">
+        <li><b>파일 올리기</b><span>영상·음성 파일을 여러 개 한 번에 올릴 수 있어요.</span></li>
+        <li><b>진단 결과 확인</b><span>Ready / Review / Not Ready와 원인·영향·권장 조치를 보여줘요.</span></li>
+        <li><b>자동 수정 → 다운로드</b><span>수정 후 같은 검사를 다시 통과한 파일만 내려받을 수 있어요.</span></li>
+      </ol>
+
       {!API_URL && (
-        <div className="card" role="status">
-          <b>실제 파일 업로드 서버를 준비 중입니다.</b>{" "}
-          <span className="muted">진단 → 자동 수정 → 재검증의 전체 흐름은 </span>
-          <Link href="/showcase#demo">인터랙티브 데모</Link>
-          <span className="muted">에서 바로 확인할 수 있어요.</span>
-        </div>
+        <p className="small muted" role="status">
+          ⏳ 업로드 서버 연결 준비 중입니다. 지금은 <Link href="/showcase#demo">샘플 파일로 체험하기</Link>에서 전체 흐름을 볼 수 있어요.
+        </p>
       )}
 
       <div
