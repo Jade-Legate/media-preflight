@@ -37,7 +37,10 @@ def probe(path: str) -> dict | None:
 
 
 def decode_check(path: str) -> dict:
-    p = run(["ffmpeg", "-v", "error", "-nostdin", "-i", path, "-map", "0:v?", "-map", "0:a?", "-f", "null", "-"])
+    # 영상은 keyframe만 디코드한다: 손상/열 수 없는 파일은 잡으면서 전체 디코드 대비 약 10배 빠르다.
+    # 오디오(STT가 실제로 쓰는 신호)는 전체를 디코드한다.
+    p = run(["ffmpeg", "-v", "error", "-nostdin", "-skip_frame", "nokey", "-i", path,
+             "-map", "0:v?", "-map", "0:a?", "-f", "null", "-"])
     errors = [l for l in p.stderr.decode(errors="replace").splitlines() if l.strip()]
     return {"exitCode": p.returncode, "errorCount": len(errors), "firstErrors": errors[:3]}
 

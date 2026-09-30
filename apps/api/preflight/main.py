@@ -1,7 +1,9 @@
 import os
 import re
 import statistics
+import tempfile
 import threading
+import zipfile
 import uuid
 from contextlib import asynccontextmanager
 from typing import Literal
@@ -12,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import text
+from starlette.background import BackgroundTask
 
 from . import config, fixes, jobqueue, rules, storage, tasks
 from .db import Diagnostic, File, FixJob, Job, Session, create_event, init_db, new_id
@@ -253,16 +256,17 @@ def create_fix(file_id: str, body: FixRequest):
         return {"fixJobId": _enqueue_fix(s, f, body.fixId, body.params).id}
 
 
-class BatchOptimize(BaseModel):
+class BatchFix(BaseModel):
     jobId: str
     fileIds: list[str] = Field(min_length=1, max_length=200)
-    fixId: Literal["FIX-002", "FIX-006"]
+    fixId: Literal["FIX-001", "FIX-002", "FIX-006"]
     params: dict = {}
     applyChannelCorrection: bool = True
 
 
+@app.post("/api/v1/batch/fix", status_code=202)
 @app.post("/api/v1/batch/optimize", status_code=202)
-def batch_optimize(body: BatchOptimize):
+def batch_fix(body: BatchFix):
     """파일별 독립 fix job. 한 파일 실패가 batch 전체를 멈추지 않는다."""
     queued, skipped = [], []
     with Session() as s:
@@ -273,7 +277,7 @@ def batch_optimize(body: BatchOptimize):
                 continue
             params = dict(body.params)
             decision = ((_latest_diag(s, fid, done_only=True) or Diagnostic()).metrics_json or {}).get("channelDecision", {})
-            if body.applyChannelCorrection and decision.get("state") == "ONE_SIDED":
+            if (body.applyChannelCorrection or body.fixId == "FIX-001") and decision.get("state") == "ONE_SIDED":
                 params["sourceChannel"] = decision["sourceChannel"]
             try:
                 queued.append({"fileId": fid, "fixJobId": _enqueue_fix(s, f, body.fixId, params).id})
@@ -290,22 +294,91 @@ def read_job(job_id: str):
         files = []
         for f in originals:
             fx = s.query(FixJob).filter_by(file_id=f.id).order_by(FixJob.created_at).all()
-            files.append({**_file_json(f), "diagnostic": _diag_json(_latest_diag(s, f.id)),
-                          "fixes": [_fix_json(s, x) for x in fx]})
+            d = _deliverable(s, f)
+            files.append({**_file_json(f), "effectiveStatus": _effective_status(f, d), "diagnostic": _diag_json(_latest_diag(s, f.id)),
+                          "fixes": [_fix_json(s, x) for x in fx],
+                          "deliverable": None if not d else {"fileId": d.id, "name": d.original_name, "fixed": d.id != f.id}})
         in_progress = any(f["status"] in ("UPLOADING", "QUEUED", "ANALYZING", "FIXING", "VERIFYING") for f in files) or any(
             x["status"] in ("QUEUED", "RUNNING") for f in files for x in f["fixes"])
         summary = {k: 0 for k in ("READY", "REVIEW_REQUIRED", "NOT_READY", "FAILED", "IN_PROGRESS", "OPTIMIZATION_REQUIRED")}
         for f in files:
             d = f["diagnostic"]
-            if f["status"] in summary:
-                summary[f["status"]] += 1
+            if any(x["status"] in ("QUEUED", "RUNNING") for x in f["fixes"]):
+                summary["IN_PROGRESS"] += 1
+            elif f["effectiveStatus"] in summary:
+                summary[f["effectiveStatus"]] += 1
             else:
                 summary["IN_PROGRESS"] += 1
-            if d and any(r["ruleId"] == "FILE-003" and r["status"] == "WARN" for r in d["results"]):
+            fixed = f["deliverable"] and f["deliverable"]["fixed"]
+            if d and not fixed and any(r["ruleId"] == "FILE-003" and r["status"] == "WARN" for r in d["results"]):
                 summary["OPTIMIZATION_REQUIRED"] += 1
         return {"jobId": job.id, "mode": job.mode, "maxFileSizeMb": job.max_file_size_mb, "createdAt": job.created_at,
                 "status": "PROCESSING" if in_progress else "COMPLETED", "summary": summary, "files": files,
                 "fixCatalog": fixes.FIXES}
+
+
+def _effective_status(f: File, deliverable: File | None) -> str:
+    """수정본이 검증을 통과했다면 그 결과가 이 파일의 최종 상태다."""
+    return deliverable.status if deliverable is not None and deliverable.id != f.id else f.status
+
+
+def _deliverable(s, f: File) -> File | None:
+    """원본 파일 기준으로 내려줄 파일: 검증 통과한 최신 수정본, 없으면 진단이 끝난 원본."""
+    fx = (s.query(FixJob).filter_by(file_id=f.id, status="SUCCEEDED").order_by(FixJob.finished_at.desc()).first())
+    out = s.get(File, fx.output_file_id) if fx else None
+    if out and out.status in ("READY", "REVIEW_REQUIRED", "NOT_READY"):
+        return out
+    return f if f.status in ("READY", "REVIEW_REQUIRED", "NOT_READY") else None
+
+
+@app.get("/api/v1/jobs/{job_id}/download.zip")
+def download_zip(job_id: str, files: str = ""):
+    """선택한 원본 파일들(files=id,id,...)의 결과물을 ZIP 하나로 받는다. 미디어는 이미 압축돼 있으므로 ZIP_STORED."""
+    ids = [i for i in files.split(",") if i][:200]
+    with Session() as s:
+        _get(s, Job, job_id, "작업")
+        picked = []
+        for fid in ids:
+            f = s.get(File, fid)
+            if f and f.job_id == job_id and f.parent_file_id is None and (d := _deliverable(s, f)):
+                picked.append(d)
+        if not picked:
+            raise APIError(404, "NOT_FOUND", "다운로드할 수 있는 파일이 없습니다.")
+        create_event(s, "download_requested", job_id, zip=True, count=len(picked))
+        s.commit()
+    fd, zip_path = tempfile.mkstemp(suffix=".zip")
+    os.close(fd)
+    used = set()
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_STORED) as z, tempfile.TemporaryDirectory() as tmp:
+        for i, f in enumerate(picked):
+            local = os.path.join(tmp, str(i))
+            storage.download(f.object_key, local)
+            name = f.original_name if f.original_name not in used else f"{i}_{f.original_name}"
+            used.add(name)
+            z.write(local, arcname=name)
+            os.remove(local)
+    return FileResponse(zip_path, filename=f"media-preflight_{job_id}.zip", media_type="application/zip",
+                        background=BackgroundTask(os.remove, zip_path))
+
+
+@app.get("/api/v1/jobs")
+def list_jobs(ids: str = ""):
+    """'내 처리 기록'용 요약. 로그인이 없으므로 브라우저가 기억하는 job id만 조회한다."""
+    out = []
+    with Session() as s:
+        for jid in [i for i in ids.split(",") if i][:100]:
+            job = s.get(Job, jid)
+            if not job:
+                continue
+            originals = [f for f in job.files if f.parent_file_id is None]
+            counts = {}
+            for f in originals:
+                st = _effective_status(f, _deliverable(s, f))
+                counts[st] = counts.get(st, 0) + 1
+            fixed = s.query(FixJob).filter(FixJob.file_id.in_([f.id for f in originals]), FixJob.status == "SUCCEEDED").count()
+            out.append({"jobId": job.id, "createdAt": job.created_at, "mode": job.mode, "fileCount": len(originals),
+                        "fixedCount": fixed, "statusCounts": counts})
+    return sorted(out, key=lambda j: j["createdAt"], reverse=True)
 
 
 @app.get("/api/v1/files/{file_id}/download")

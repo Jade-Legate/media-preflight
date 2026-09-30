@@ -143,3 +143,12 @@ section.block { padding: 40px 0; border-top: 1px solid var(--border); scroll-mar
   .brand span { display: none; }
   .topbar .btn { padding: 6px 10px; white-space: nowrap; }
 }
+
+.filecard > summary { list-style: none; display: flex; gap: 10px; align-items: center; }
+.filecard > summary::-webkit-details-marker { display: none; }
+.filecard > summary::before { content: "▸"; color: var(--muted); }
+.filecard[open] > summary::before { content: "▾"; }
+.filecard[open] > summary { margin-bottom: 16px; }
+.history-item { display: block; color: inherit; text-decoration: none; }
+.history-item:hover { border-color: var(--accent); }
+@media (max-width: 640px) { .topbar nav .btn { padding: 6px 8px; font-size: .82rem; } }
