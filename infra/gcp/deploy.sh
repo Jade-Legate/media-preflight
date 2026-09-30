@@ -6,6 +6,9 @@
 #   export PROJECT_ID=... DATABASE_URL='postgresql://...neon.tech/...?sslmode=require' WEB_ORIGINS=https://<web>.vercel.app
 #   ./infra/gcp/deploy.sh
 set -euo pipefail
+# 비밀값은 gitignore된 .env.deploy에서 읽는다(채팅/셸 기록에 남기지 않기 위해).
+ENV_FILE="$(dirname "$0")/../../.env.deploy"
+[ -f "$ENV_FILE" ] && set -a && . "$ENV_FILE" && set +a
 
 : "${PROJECT_ID:?PROJECT_ID 필요}" "${DATABASE_URL:?Neon DATABASE_URL 필요}" "${WEB_ORIGINS:?Vercel 웹 주소 필요}"
 REGION="${REGION:-asia-northeast3}"          # 서울
