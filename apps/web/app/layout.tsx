@@ -17,7 +17,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Link href="/" className="brand">
               Media Preflight <span>· AI Readiness Check</span>
             </Link>
-            <HeaderAction />
+            <nav className="row" style={{ gap: 8, flexWrap: "nowrap" }}>
+              <Link href="/history" className="btn">내 처리 기록</Link>
+              <HeaderAction />
+            </nav>
           </div>
         </header>
         <main className="wrap">{children}</main>

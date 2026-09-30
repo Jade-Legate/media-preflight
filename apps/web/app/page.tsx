@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { rememberJob } from "@/lib/history";
 import { API_URL, ApiError, MAX_UPLOAD_BYTES, SUPPORTED, mb, post } from "@/lib/api";
 
 type Picked = { file: File; problem: string | null; progress: number };
@@ -57,6 +57,7 @@ export default function Home() {
         mode,
         maxFileSizeMb: limitOn ? limit : null,
       });
+      rememberJob(job.jobId);
       // 파일은 서버를 거치지 않고 object storage로 직접 올린다(signed URL).
       await Promise.all(
         job.files.map(async (target, i) => {
@@ -95,11 +96,7 @@ export default function Home() {
         <li><b>자동 수정 → 다운로드</b><span>수정 후 같은 검사를 다시 통과한 파일만 내려받을 수 있어요.</span></li>
       </ol>
 
-      {!API_URL && (
-        <p className="small muted" role="status">
-          ⏳ 업로드 서버 연결 준비 중입니다. 지금은 <Link href="/showcase#demo">샘플 파일로 체험하기</Link>에서 전체 흐름을 볼 수 있어요.
-        </p>
-      )}
+      {!API_URL && <p className="small muted" role="status">⏳ 업로드 서버 연결 준비 중입니다.</p>}
 
       <div
         className={`drop ${over ? "over" : ""}`}

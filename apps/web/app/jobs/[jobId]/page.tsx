@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { ApiError, api, mb, post, type Job, type JobFile, type RuleResult } from "@/lib/api";
+import { API_URL, ApiError, api, mb, post, type Job, type JobFile, type RuleResult } from "@/lib/api";
+import { formatTime, rememberJob } from "@/lib/history";
 import { IssueList, OptimizeControls, READINESS_TEXT, StatusBadge, TechDetails, Verification, issuesOf } from "@/components/Diagnosis";
 
 const FAILURE_TEXT: Record<string, string> = {
@@ -18,6 +19,7 @@ export default function JobPage() {
   const { jobId } = useParams<{ jobId: string }>();
   const [job, setJob] = useState<Job | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const load = useCallback(async () => {
     try {
@@ -29,7 +31,8 @@ export default function JobPage() {
 
   useEffect(() => {
     load();
-  }, [load]);
+    rememberJob(jobId);
+  }, [load, jobId]);
   useEffect(() => {
     if (job?.status !== "PROCESSING") return;
     const t = setTimeout(load, 1500);
@@ -53,8 +56,8 @@ export default function JobPage() {
     <div className="stack">
       <div className="row spread">
         <div>
-          <Link href="/" className="small">← 새 파일 진단</Link>
-          <h1 style={{ marginTop: 6 }}>Diagnosis</h1>
+          <Link href="/history" className="small">← 내 처리 기록</Link>
+          <h1 style={{ marginTop: 6 }}>{formatTime(job.createdAt)} 처리 요청</h1>
           <div className="muted small">
             {job.mode === "speech" ? "Speech-only" : "Video analysis"} · 용량 제한 {job.maxFileSizeMb ? `${job.maxFileSizeMb} MB` : "없음"}
           </div>
@@ -64,21 +67,92 @@ export default function JobPage() {
 
       <div className="summary-grid">
         <div className="stat"><b>{job.files.length}</b>전체 파일</div>
+        {s.IN_PROGRESS > 0 && <div className="stat"><b>{s.IN_PROGRESS}</b>⏳ 진행 중</div>}
         <div className="stat"><b>{s.READY}</b>● Ready</div>
         <div className="stat"><b>{s.REVIEW_REQUIRED}</b>▲ Review required</div>
         <div className="stat"><b>{s.NOT_READY}</b>✕ Not ready</div>
         <div className="stat"><b>{s.OPTIMIZATION_REQUIRED}</b>용량 최적화 필요</div>
         {s.FAILED > 0 && <div className="stat"><b>{s.FAILED}</b>분석 실패</div>}
-        {s.IN_PROGRESS > 0 && <div className="stat"><b>{s.IN_PROGRESS}</b>⏳ 진행 중</div>}
       </div>
 
       {error && <div className="error" role="alert">{error}</div>}
 
+      <ChannelBatchBar job={job} act={act} />
       {s.OPTIMIZATION_REQUIRED > 1 && <BatchBar job={job} act={act} />}
+      <DownloadBar job={job} selected={selected} setSelected={setSelected} />
 
       {job.files.map((f) => (
-        <FileCard key={f.fileId} file={f} job={job} act={act} />
+        <FileCard
+          key={f.fileId}
+          file={f}
+          job={job}
+          act={act}
+          collapsible={job.files.length > 3}
+          checked={selected.has(f.fileId)}
+          onToggle={() => {
+            const next = new Set(selected);
+            if (next.has(f.fileId)) next.delete(f.fileId);
+            else next.add(f.fileId);
+            setSelected(next);
+          }}
+        />
       ))}
+    </div>
+  );
+}
+
+const running = (f: JobFile) => f.fixes.some((x) => x.status === "QUEUED" || x.status === "RUNNING");
+
+function ChannelBatchBar({ job, act }: { job: Job; act: (fn: () => Promise<unknown>) => void }) {
+  // 채널 이상이 확실하고 아직 수정본이 없는 파일
+  const targets = job.files.filter(
+    (f) => f.diagnostic?.metrics?.channelDecision?.state === "ONE_SIDED" && !f.fixes.some((x) => x.fixId === "FIX-001" && x.status !== "FAILED"),
+  );
+  if (targets.length < 2) return null;
+  return (
+    <div className="card row spread">
+      <div>
+        <h3 style={{ margin: 0 }}>채널 이상 {targets.length}개 파일</h3>
+        <span className="muted small">정상 채널을 L/R에 복제하고, 수정본마다 자동으로 재검증합니다. 판단이 애매한 파일은 제외됩니다.</span>
+      </div>
+      <button
+        className="btn primary"
+        onClick={() => act(() => post("/api/v1/batch/fix", { jobId: job.jobId, fileIds: targets.map((f) => f.fileId), fixId: "FIX-001" }))}
+      >
+        {targets.length}개 한 번에 자동 수정
+      </button>
+    </div>
+  );
+}
+
+function DownloadBar({ job, selected, setSelected }: { job: Job; selected: Set<string>; setSelected: (s: Set<string>) => void }) {
+  const done = job.files.filter((f) => f.deliverable);
+  if (!done.length) return null;
+  const pick = (pred: (f: JobFile) => boolean) => setSelected(new Set(done.filter(pred).map((f) => f.fileId)));
+  const ids = done.filter((f) => selected.has(f.fileId)).map((f) => f.fileId);
+  return (
+    <div className="card stack">
+      <div className="row spread">
+        <div>
+          <h3 style={{ margin: 0 }}>완료된 파일 {done.length}개 다운로드</h3>
+          <span className="muted small">수정된 파일은 재검증을 통과한 수정본, 나머지는 원본이 담깁니다.</span>
+        </div>
+        {ids.length ? (
+          <a className="btn primary" href={`${API_URL}/api/v1/jobs/${job.jobId}/download.zip?files=${ids.join(",")}`}>
+            선택한 {ids.length}개 다운로드 (ZIP)
+          </a>
+        ) : (
+          <button className="btn primary" disabled>파일을 선택하세요</button>
+        )}
+      </div>
+      <div className="row small">
+        <button className="btn" onClick={() => pick(() => true)}>전체 선택</button>
+        <button className="btn" onClick={() => pick((f) => !!f.deliverable?.fixed)}>수정된 파일만</button>
+        <button className="btn" onClick={() => pick((f) => f.effectiveStatus === "READY")}>
+          Ready만
+        </button>
+        <button className="btn" onClick={() => setSelected(new Set())}>선택 해제</button>
+      </div>
     </div>
   );
 }
@@ -86,10 +160,10 @@ export default function JobPage() {
 function BatchBar({ job, act }: { job: Job; act: (fn: () => Promise<unknown>) => void }) {
   const targets = job.files.filter((f) => f.diagnostic?.results.some((r) => r.ruleId === "FILE-003" && r.status === "WARN"));
   const before = targets.reduce((n, f) => n + (f.sizeBytes ?? 0), 0);
-  const running = targets.some((f) => f.fixes.some((x) => x.status === "QUEUED" || x.status === "RUNNING"));
+  const busy = targets.some(running);
   return (
     <div className="card">
-      <h3>Batch Media Optimizer</h3>
+      <h3>용량 초과 파일 일괄 최적화</h3>
       <p className="muted small">
         용량 초과 {targets.length}개 · 합계 {mb(before)}. 파일마다 독립 작업으로 처리되며 한 파일이 실패해도 나머지는 계속됩니다.
         채널 이상이 확인된 파일은 채널 교정을 함께 적용합니다.
@@ -97,7 +171,7 @@ function BatchBar({ job, act }: { job: Job; act: (fn: () => Promise<unknown>) =>
       <OptimizeControls
         recommended={job.mode === "speech" ? "FIX-002" : "FIX-006"}
         channelFix={null}
-        disabled={running}
+        disabled={busy}
         onRun={(fixId, params) =>
           act(() => post("/api/v1/batch/optimize", { jobId: job.jobId, fileIds: targets.map((f) => f.fileId), fixId, params, applyChannelCorrection: true }))
         }
@@ -106,7 +180,21 @@ function BatchBar({ job, act }: { job: Job; act: (fn: () => Promise<unknown>) =>
   );
 }
 
-function FileCard({ file, job, act }: { file: JobFile; job: Job; act: (fn: () => Promise<unknown>) => void }) {
+function FileCard({
+  file,
+  job,
+  act,
+  collapsible,
+  checked,
+  onToggle,
+}: {
+  file: JobFile;
+  job: Job;
+  act: (fn: () => Promise<unknown>) => void;
+  collapsible: boolean;
+  checked: boolean;
+  onToggle: () => void;
+}) {
   const d = file.diagnostic;
   const decision = d?.metrics?.channelDecision;
   const channelFix = decision?.state === "ONE_SIDED" && decision.sourceChannel != null ? { source: decision.sourceChannel } : null;
@@ -137,14 +225,36 @@ function FileCard({ file, job, act }: { file: JobFile; job: Job; act: (fn: () =>
   };
 
   return (
-    <article className="card stack" aria-label={file.name}>
-      <div className="row spread">
-        <div>
-          <h2 style={{ marginBottom: 2, wordBreak: "break-all" }}>{file.name}</h2>
-          <span className="muted small mono">{mb(file.sizeBytes)}</span>
+    <Wrapper
+      collapsible={collapsible}
+      header={
+        <div className="row spread" style={{ flex: 1, flexWrap: "nowrap" }}>
+          <div className="row" style={{ flexWrap: "nowrap", alignItems: "flex-start" }}>
+            <input
+              type="checkbox"
+              checked={checked}
+              disabled={!file.deliverable}
+              onChange={onToggle}
+              onClick={(e) => e.stopPropagation()}
+              aria-label={`${file.name} 다운로드 선택`}
+              style={{ marginTop: 8, width: 18, height: 18 }}
+            />
+          <div>
+            <h2 style={{ marginBottom: 2, wordBreak: "break-all" }}>{file.name}</h2>
+            <span className="muted small mono">
+              {mb(file.sizeBytes)}
+              {d?.status === "DONE" && ` · ${issuesOf(d).length ? `문제 ${issuesOf(d).length}개` : "문제 없음"}`}
+              {file.deliverable && (file.deliverable.fixed ? " · 받기: 수정본" : " · 받기: 원본")}
+            </span>
+          </div>
+          </div>
+          <span className="row" style={{ gap: 6, flexWrap: "nowrap" }}>
+            {!running(file) && file.deliverable?.fixed && <span className="badge ready">✓ 수정됨</span>}
+            <StatusBadge status={running(file) ? "FIXING" : file.effectiveStatus} />
+          </span>
         </div>
-        <StatusBadge status={file.status} />
-      </div>
+      }
+    >
 
       {d?.status === "DONE" && d.overallStatus && <p style={{ margin: 0 }}>{READINESS_TEXT[d.overallStatus]}</p>}
       {d?.status === "FAILED" && (
@@ -190,7 +300,23 @@ function FileCard({ file, job, act }: { file: JobFile; job: Job; act: (fn: () =>
           <TechDetails diagnostic={d} />
         </>
       )}
-    </article>
+    </Wrapper>
+  );
+}
+
+function Wrapper({ collapsible, header, children }: { collapsible: boolean; header: React.ReactNode; children: React.ReactNode }) {
+  if (!collapsible)
+    return (
+      <article className="card stack">
+        {header}
+        {children}
+      </article>
+    );
+  return (
+    <details className="card filecard">
+      <summary>{header}</summary>
+      <div className="stack">{children}</div>
+    </details>
   );
 }
 
